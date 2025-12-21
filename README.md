@@ -3,6 +3,7 @@
 Lightweight monitoring stack for local/dev environments. This repository provides a small Docker Compose stack that runs Prometheus, Grafana, cAdvisor, node-exporter, Loki and Promtail for metrics and logs.
 
 Files of interest:
+
 - `docker-compose.yml` — service definitions and volumes
 - `prometheus.yml` — Prometheus scrape targets
 - `promtail-config.yaml` — Promtail log discovery and relabeling
@@ -58,6 +59,7 @@ docker compose up -d
 - `promtail` — collects container logs and pushes to Loki.
 
 Volumes created by compose:
+
 - `grafana-data`, `prometheus-data`, `loki-data`, `promtail-positions`.
 
 ---
@@ -98,6 +100,7 @@ docker compose logs -f loki       # watch loki
 ## Creating a Logs panel in Grafana
 
 1. Create a dashboard variable `container`:
+
    - Type: Query, Data source: your Loki datasource
    - Query: `label_values({job="docker-sd"}, container_name)`
 
@@ -157,12 +160,3 @@ docker compose logs -f grafana
 # list running torker containers
 docker ps --filter name=torker_
 ```
-
----
-
-## Want me to add more?
-
-- I can create an importable Grafana dashboard JSON with a `$container` variable, a Logs panel and an error-count graph.
-- I can add a small `.env.example` file to the repo.
-
-If you'd like either, tell me which and I'll add it.
