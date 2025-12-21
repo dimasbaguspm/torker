@@ -74,9 +74,35 @@ services:
     networks:
       - home
 
+  loki:
+    image: grafana/loki:3.5.9
+    container_name: torker_loki
+    restart: unless-stopped
+    volumes:
+      - loki-data:/loki
+    ports:
+      - 9115:3100
+    networks:
+      - home
+
+  promtail:
+    image: grafana/promtail:3.5.9
+    container_name: torker_promtail
+    restart: unless-stopped
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/log:/var/log:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - promtail-positions:/tmp
+      - ./promtail-config.yaml:/etc/promtail/config.yml:ro
+    networks:
+      - home
+
 volumes:
   grafana-data:
   prometheus-data:
+  loki-data:
+  promtail-positions:
 
 networks:
   home:
