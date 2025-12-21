@@ -12,8 +12,10 @@ jobs:
 
       - name: Prepare environment file from secrets
         run: |
-          echo "GRAFANA_ADMIN_USER=${{ secrets.GRAFANA_ADMIN_USER }}" >> .env
-          echo "GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}" >> .env
+          cat <<'EOF' > .env
+          GRAFANA_ADMIN_USER=${{ secrets.GRAFANA_ADMIN_USER }}
+          GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}
+          EOF
 
       - name: Copy deployment files to host
         uses: appleboy/scp-action@v0.1.7
