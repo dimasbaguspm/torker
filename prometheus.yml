@@ -20,19 +20,25 @@ scrape_configs:
     static_configs:
       - targets:
           - "cadvisor:8080"
+        labels:
+          # Set a stable instance label so Grafana template variables match across jobs.
+          # Replace 'lab01' with your host identifier if desired.
+          instance: "lab01"
+          node: "lab01"
     metric_relabel_configs:
       - source_labels: ["container_label_com_docker_swarm_service_name"]
         target_label: "service"
       - source_labels: ["name"]
         target_label: "container"
-      - source_labels: ["__address__"]
-        regex: "([^:]+):.*"
-        target_label: "node"
 
   - job_name: "node-exporter"
     static_configs:
       - targets:
           - "node-exporter:9100"
+        labels:
+          # Match the same instance/node label used for cadvisor so dashboard variables align.
+          instance: "lab01"
+          node: "lab01"
 
   # Example: add other exporters reachable on the home network
   # - job_name: "nginx-exporter"
