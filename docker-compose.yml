@@ -37,8 +37,6 @@ services:
     privileged: true
     environment:
       - DOCKER_API_VERSION=1.52
-    command:
-      - "--allowlisted_container_labels=com.docker.swarm.service.name"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:rw
