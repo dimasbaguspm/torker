@@ -3,40 +3,44 @@ server:
   grpc_listen_port: 0
 
 positions:
-  filename: /tmp/positions.yaml
+  filename: /tmp/positions.yaml # This maps to the promtail-positions volume in your compose
 
 clients:
   - url: http://loki:3100/loki/api/v1/push
 
 scrape_configs:
-  - job_name: docker-sd
+  - job_name: docker
     docker_sd_configs:
       - host: unix:///var/run/docker.sock
         refresh_interval: 5s
     relabel_configs:
-      # set __path__ so promtail reads the correct container json log file
+      # Map the container ID to the actual path on the Promtail container's filesystem
       - source_labels: [__meta_docker_container_id]
         target_label: __path__
         replacement: /var/lib/docker/containers/$1/*-json.log
-      # expose container name and docker-compose labels as Promtail labels
+
+      # Clean up the container name (removes the leading slash)
       - source_labels: [__meta_docker_container_name]
-        target_label: container_name
+        regex: "/(.*)"
+        target_label: container
+
+      # Capture Docker Compose Service Name
       - source_labels:
           [__meta_docker_container_label_com_docker_compose_service]
-        target_label: compose_service
+        target_label: service
+
+      # Capture Docker Compose Project Name
       - source_labels:
           [__meta_docker_container_label_com_docker_compose_project]
-        target_label: compose_project
-    pipeline_stages:
-      - docker: {}
+        target_label: project
 
-  # fallback: file scrape for any logs not discovered by docker SD
-  - job_name: file-logs
+    pipeline_stages:
+      - docker: {} # Automatically parses JSON logs from Docker
+
+  - job_name: system
     static_configs:
       - targets: [localhost]
         labels:
-          job: file
-          __path__: /var/log/*log
-    pipeline_stages:
-      - regex:
-          expression: "(?P<message>.*)"
+          job: varlogs
+          host: lab01 # Matches your Prometheus instance/node labels
+          __path__: /var/log/*.log

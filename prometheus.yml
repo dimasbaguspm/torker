@@ -1,49 +1,37 @@
-# my global config
 global:
   scrape_interval: 15s
   evaluation_interval: 15s
-  # scrape_timeout uses the default (10s).
-
   external_labels:
     monitor: "my-project"
-
-rule_files:
-  # - "alert.rules"
 
 scrape_configs:
   - job_name: "prometheus"
     static_configs:
-      - targets:
-          - "localhost:9090"
+      - targets: ["localhost:9090"]
 
   - job_name: "cadvisor"
     static_configs:
-      - targets:
-          - "cadvisor:8080"
+      - targets: ["cadvisor:8080"]
         labels:
-          # Set a stable instance label so Grafana template variables match across jobs.
-          # Replace 'lab01' with your host identifier if desired.
           instance: "lab01"
           node: "lab01"
     metric_relabel_configs:
-      - source_labels: ["container_label_com_docker_swarm_service_name"]
-        target_label: "service"
-      - source_labels: ["container_label_com_docker_compose_service"]
-        target_label: "service"
-      - source_labels: ["name"]
-        target_label: "container"
+      # Prioritize Docker Compose/Swarm service names
+      - source_labels: [__name__]
+        separator: ;
+        regex: ^container_.*
+        replacement: $1
+        action: keep
+      - source_labels: [container_label_com_docker_compose_service]
+        target_label: service
+      - source_labels: [container_label_com_docker_swarm_service_name]
+        target_label: service
+      - source_labels: [name]
+        target_label: container
 
   - job_name: "node-exporter"
     static_configs:
-      - targets:
-          - "node-exporter:9100"
+      - targets: ["node-exporter:9100"]
         labels:
-          # Match the same instance/node label used for cadvisor so dashboard variables align.
           instance: "lab01"
           node: "lab01"
-
-  # Example: add other exporters reachable on the home network
-  # - job_name: "nginx-exporter"
-  #   static_configs:
-  #     - targets:
-  #         - "nginx-exporter:9113"
