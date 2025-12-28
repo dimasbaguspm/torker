@@ -11,6 +11,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Setup cloudflared
+        uses: AnimMouse/setup-cloudflared@v2
+
       - name: Prepare environment file from secrets
         run: |
           cat <<'EOF' > .env
@@ -18,22 +21,29 @@ jobs:
           GRAFANA_ADMIN_PASSWORD=${{ secrets.GRAFANA_ADMIN_PASSWORD }}
           EOF
 
-      - name: Copy deployment files to host
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          password: ${{ secrets.VPS_PASSWORD }}
-          source: "docker-compose.yml,prometheus.yml,.env,promtail-config.yaml"
-          target: "~/torker"
+      - name: Install rsync and sshpass
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rsync sshpass
 
-      - name: Deploy stack via SSH
-        uses: appleboy/ssh-action@v1.2.2
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          password: ${{ secrets.VPS_PASSWORD }}
-          script: |
-            mkdir -p ~/torker/data
-            cd ~/torker
-            sudo docker compose up -d
+      - name: Copy source to VPS via cloudflared (rsync over SSH using password)
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          # Ensure remote directory exists
+          sshpass -p "$VPS_PASSWORD" ssh -o StrictHostKeyChecking=no -o ProxyCommand="cloudflared access ssh --hostname %h" $VPS_USER@$VPS_HOST "mkdir -p ~/torker && mkdir -p ~/torker/data"
+
+          # Use rsync over ssh routed through cloudflared to copy repo (exclude .git)
+          RSYNC_SSH="sshpass -p '$VPS_PASSWORD' ssh -o StrictHostKeyChecking=no -o ProxyCommand=\"cloudflared access ssh --hostname %h\""
+          rsync -avz --exclude '.git' -e "$RSYNC_SSH" ./ $VPS_USER@$VPS_HOST:~/torker
+
+      - name: Deploy services on VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PASSWORD: ${{ secrets.VPS_PASSWORD }}
+        run: |
+          # Start services on the VPS using docker compose (assumes docker & compose available)
+          sshpass -p "$VPS_PASSWORD" ssh -o StrictHostKeyChecking=no -o ProxyCommand="cloudflared access ssh --hostname %h" $VPS_USER@$VPS_HOST "cd ~/torker && docker compose up -d"
