@@ -37,6 +37,9 @@ services:
     privileged: true
     environment:
       - DOCKER_API_VERSION=1.52
+    command:
+      - "--store_container_labels=true"
+      - "--whitelisted_container_labels=com.docker.swarm.service.name,com.docker.compose.service"
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:rw
