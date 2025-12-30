@@ -1,4 +1,16 @@
 services:
+  portainer:
+    image: portainer/portainer-ce:2.33.6
+    container_name: torker_portainer
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer-data:/data
+    ports:
+      - 9116:9000
+    networks:
+      - home
+
   prometheus:
     image: prom/prometheus:v3.8.1
     container_name: torker_prometheus
@@ -103,6 +115,7 @@ volumes:
   prometheus-data:
   loki-data:
   promtail-positions:
+  portainer-data:
 
 networks:
   home:
